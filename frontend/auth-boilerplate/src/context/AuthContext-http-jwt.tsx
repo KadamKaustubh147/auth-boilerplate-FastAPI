@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const initialize = async () => {
         try {
             // Call a simple protected endpoint to check if cookies are valid:
-            const response = await api.get("/accounts/users/me/");
+            const response = await api.get("/accounts/me/");
             setUser(response.data);
         } catch (err) {
             console.error("Failed to initialize user", err);
