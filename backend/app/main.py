@@ -1,34 +1,39 @@
+print("Auth router")
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi.middleware import SlowAPIMiddleware
-from slowapi.errors import RateLimitExceeded
-from slowapi import _rate_limit_exceeded_handler
+# from slowapi.errors import RateLimitExceeded
+# from slowapi import _rate_limit_exceeded_handler
 
 from app.api.router import router
 from app.db.mongo import init_db
 from app.core.config import settings
-from app.core.limiter import limiter
 
 
-# Use lifespan events for intialising Databases or ML models
+# Use lifespan events for initialising Databases or ML models
+print("Lifespan started")
+
 @asynccontextmanager
-async def lifespan(app:FastAPI):
+async def lifespan(app: FastAPI):
+    print("Lifespan startup: initializing limiter and DB")
     await init_db()
+    print("Lifespan startup: complete")
     
-    # yield is necessary as per lifespan syntax
     yield
-    # shutdown cleanup (optional)
+    
+    print("Lifespan shutdown: cleanup")
 
+print("Lifespan ended")
+
+# Create app FIRST with lifespan
 app = FastAPI(lifespan=lifespan)
 
-app.state.limiter = limiter
 
+# Add exception handler
+# app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore
 
-
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler) # type:ignore
-app.add_middleware(SlowAPIMiddleware)
-
+# Add middleware in reverse order (last add = first execute)
+# Add CORS last (outermost)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.FRONTEND_ORIGIN],
@@ -37,4 +42,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# Include router last
 app.include_router(router)
+
+print("FastAPI app initialized successfully")
